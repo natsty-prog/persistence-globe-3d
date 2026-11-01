@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ממדים קריטיים להתמדה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Assistant:wght@400;600;700&display=swap">
+<style>
+/* Layout: one stage — a dotted globe at the centre, three dimension cards orbiting it; each card flips question ⇄ status */
+:root {
+  --bg: #f6f4f7;
+  --fg: #232026;
+  --muted: #6d6873;
+  --ring: rgba(35, 32, 38, .12);
+  --btn-bg: #ffffff;
+  --btn-border: rgba(35, 32, 38, .14);
+  --pink: #c21e6a;
+  --orange: #eba322;
+  --teal: #6bb89b;
+  --on-card: #ffffff;
+  --font-display: "Rubik", "Assistant", "Segoe UI", Arial, sans-serif;
+  --font-body: "Assistant", "Segoe UI", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17151a; --fg: #f1eef3; --muted: #a49fab; --ring: rgba(241, 238, 243, .14);
+    --btn-bg: #24212a; --btn-border: rgba(241, 238, 243, .16); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17151a; --fg: #f1eef3; --muted: #a49fab; --ring: rgba(241, 238, 243, .14);
+  --btn-bg: #24212a; --btn-border: rgba(241, 238, 243, .16); color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  direction: rtl; overflow-x: hidden;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1100px; margin: 0 auto; padding-block: 28px 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 100%; box-sizing: border-box; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 6vw, 56px); margin: 0; text-wrap: balance; text-align: center; letter-spacing: -.01em; }
+
+.stage { position: relative; width: 100%; height: clamp(440px, 70vh, 620px); perspective: 1400px; touch-action: pan-y; cursor: grab; user-select: none; }
+.stage.dragging { cursor: grabbing; }
+#globe { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+.card { position: absolute; left: 50%; top: 50%; width: var(--cw); height: var(--ch); margin-left: calc(var(--cw) / -2); margin-top: calc(var(--ch) / -2); transform-style: preserve-3d; will-change: transform, opacity; }
+.card .inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .9s cubic-bezier(.6, .05, .25, 1); cursor: pointer; }
+.card.flipped .inner { transform: rotateY(180deg); }
+.face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: var(--c); color: var(--on-card); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 22px 26px; box-sizing: border-box; text-align: center; box-shadow: 0 18px 40px -18px rgba(0,0,0,.45); }
+.face.back { transform: rotateY(180deg); }
+/* folded corner, echoing the original slide */
+.face::before { content: ""; position: absolute; top: -16px; left: -16px; width: 46px; height: 46px; background: var(--c); opacity: .45; clip-path: polygon(0 0, 100% 0, 100% 30%, 30% 30%, 30% 100%, 0 100%); }
+.face h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(18px, 2.4vw, 24px); margin: 0; }
+.face p { margin: 0; font-size: clamp(16px, 2vw, 20px); line-height: 1.45; font-weight: 600; text-wrap: balance; }
+.chev { width: 46px; height: 26px; opacity: .55; }
+.chev path { fill: var(--on-card); }
+.card:focus-visible { outline: none; }
+.card:focus-visible .face { outline: 3px solid var(--fg); outline-offset: 4px; }
+
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.controls button { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--fg); background: var(--btn-bg); border: 1px solid var(--btn-border); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+.controls button:hover { border-color: var(--fg); }
+.controls button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.dots { display: flex; gap: 8px; }
+.dots button { width: 14px; height: 14px; padding: 0; border-radius: 50%; border: 2px solid var(--dc); background: transparent; }
+.dots button[aria-current="true"] { background: var(--dc); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>ממדים קריטיים להתמדה</h1>
+
+  <div class="stage" id="stage">
+    <canvas id="globe" aria-hidden="true"></canvas>
+
+    <div class="card" tabindex="0" style="--c: var(--teal)" data-name="מעורבות">
+      <div class="inner">
+        <div class="face front"><h2>מעורבות</h2><p>מי מתנתק מהקבוצה?<br>מי כבר לא כאן?</p></div>
+        <div class="face back"><svg class="chev" viewBox="0 0 46 26"><path d="M0 0 L23 16 L46 0 L46 10 L23 26 L0 10 Z"/></svg><p>סטטוס צפייה במפגשי הנחייה<br>סטודנטים שלא נכנסו חודש</p></div>
+      </div>
+    </div>
+
+    <div class="card" tabindex="0" style="--c: var(--orange)" data-name="התקדמות">
+      <div class="inner">
+        <div class="face front"><h2>התקדמות</h2><p>מי נשאר מאחור בחומר<br>ועד כמה?</p></div>
+        <div class="face back"><svg class="chev" viewBox="0 0 46 26"><path d="M0 0 L23 16 L46 0 L46 10 L23 26 L0 10 Z"/></svg><p>סטטוס השלמת<br>יחידות לימוד</p></div>
+      </div>
+    </div>
+
+    <div class="card" tabindex="0" style="--c: var(--pink)" data-name="ביצוע">
+      <div class="inner">
+        <div class="face front"><h2>ביצוע</h2><p>מי מתחיל ״להחליק״<br>בהגשת מטלות?</p></div>
+        <div class="face back"><svg class="chev" viewBox="0 0 46 26"><path d="M0 0 L23 16 L46 0 L46 10 L23 26 L0 10 Z"/></svg><p>סטטוס הגשת מטלות</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="prev" type="button" aria-label="הקודם">→</button>
+    <div class="dots" id="dots"></div>
+    <button id="next" type="button" aria-label="הבא">←</button>
+    <button id="play" type="button">השהיה</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const cards = [...stage.querySelectorAll('.card')];
+  const N = cards.length, STEP = 360 / N;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const css = getComputedStyle(document.documentElement);
+  const colors = ['--teal', '--orange', '--pink'].map(v => css.getPropertyValue(v).trim());
+
+  let angle = 0, target = null, playing = !reduce, R = 300, W = 0, H = 0;
+  let dragging = false, lastX = 0, vel = 0, lastFlip = performance.now();
+
+  // dots
+  const dots = document.getElementById('dots');
+  cards.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.style.setProperty('--dc', colors[i]);
+    b.setAttribute('aria-label', c.dataset.name);
+    b.onclick = () => goTo(i);
+    dots.appendChild(b);
+  });
+
+  function size() {
+    W = stage.clientWidth; H = stage.clientHeight;
+    const cw = Math.min(290, W * 0.62), ch = Math.max(150, cw * 0.62);
+    stage.style.setProperty('--cw', cw + 'px');
+    stage.style.setProperty('--ch', ch + 'px');
+    R = Math.min(W * 0.36, 340);
+    globe.resize();
+  }
+
+  function norm(a) { return ((a % 360) + 540) % 360 - 180; }
+  function frontIndex() {
+    let best = 0, bz = -2;
+    cards.forEach((c, i) => { const z = Math.cos((angle + i * STEP) * Math.PI / 180); if (z > bz) { bz = z; best = i; } });
+    return best;
+  }
+  function goTo(i) { target = angle + norm(-(angle + i * STEP)); }
+
+  function layout() {
+    const fi = frontIndex();
+    cards.forEach((c, i) => {
+      const t = (angle + i * STEP) * Math.PI / 180;
+      const x = -Math.sin(t) * R, z = Math.cos(t) * R;
+      const y = -z * 0.16;
+      const k = (z / R + 1) / 2; // 0 back … 1 front
+      c.style.transform = `translate3d(${x}px, ${y}px, ${z * 0.9}px) scale(${0.72 + k * 0.28})`;
+      c.style.opacity = (0.35 + k * 0.65).toFixed(3);
+      c.style.filter = k < 0.5 ? `blur(${((0.5 - k) * 4).toFixed(2)}px)` : 'none';
+      c.style.zIndex = z > 0 ? 2 + Math.round(k * 10) : 0;
+      c.setAttribute('aria-hidden', i === fi ? 'false' : 'true');
+    });
+    [...dots.children].forEach((d, i) => d.setAttribute('aria-current', i === fi));
+  }
+
+  // dotted globe in the three slide colours
+  const globe = (() => {
+    const cv = document.getElementById('globe'), ctx = cv.getContext('2d');
+    const pts = [], M = 520, dpr = Math.min(devicePixelRatio || 1, 2);
+    for (let i = 0; i < M; i++) {
+      const y = 1 - (i / (M - 1)) * 2, r = Math.sqrt(1 - y * y), th = i * 2.39996;
+      pts.push([Math.cos(th) * r, y, Math.sin(th) * r, colors[i % 3]]);
+    }
+    let gr = 120;
+    return {
+      resize() { cv.width = W * dpr; cv.height = H * dpr; gr = Math.min(W, H) * 0.26; },
+      draw(rot) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        const cx = W / 2, cy = H / 2, s = Math.sin(rot), c = Math.cos(rot), tilt = -0.35, st = Math.sin(tilt), ct = Math.cos(tilt);
+        ctx.strokeStyle = css.getPropertyValue('--ring'); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(cx, cy + R * 0.0, R * 1.02, R * 0.2, 0, 0, Math.PI * 2); ctx.stroke();
+        for (const [x, y, z, col] of pts) {
+          let X = x * c - z * s, Z = x * s + z * c;
+          let Y = y * ct - Z * st; Z = y * st + Z * ct;
+          const d = (Z + 1) / 2;
+          ctx.globalAlpha = 0.12 + d * 0.75;
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(cx + X * gr, cy + Y * gr, 1 + d * 2.2, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+    };
+  })();
+
+  let prev = performance.now(), spin = 0;
+  function tick(now) {
+    const dt = Math.min(now - prev, 50); prev = now;
+    if (target !== null) {
+      const d = target - angle; angle += d * Math.min(1, dt * 0.006);
+      if (Math.abs(d) < 0.05) { angle = target; target = null; }
+    } else if (!dragging) {
+      if (Math.abs(vel) > 0.01) { angle += vel; vel *= 0.94; }
+      else if (playing) angle -= dt * 0.012;
+    }
+    spin += dt * 0.00025 + (playing ? 0 : 0);
+    // auto-flip the front card every few seconds so each shows question, then status
+    if (playing && now - lastFlip > 3200) {
+      lastFlip = now;
+      const fi = frontIndex();
+      cards.forEach((c, i) => { if (i !== fi) c.classList.remove('flipped'); });
+      cards[fi].classList.toggle('flipped');
+    }
+    layout();
+    globe.draw(spin + angle * Math.PI / 180 * 0.6);
+    requestAnimationFrame(tick);
+  }
+
+  cards.forEach((c, i) => {
+    const flip = () => { if (frontIndex() !== i) { goTo(i); return; } c.classList.toggle('flipped'); lastFlip = performance.now(); };
+    c.addEventListener('click', e => { if (moved < 6) flip(); });
+    c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+  });
+
+  let moved = 0;
+  stage.addEventListener('pointerdown', e => { dragging = true; moved = 0; lastX = e.clientX; vel = 0; target = null; stage.classList.add('dragging'); });
+  addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX; lastX = e.clientX; moved += Math.abs(dx);
+    vel = -dx * 0.25; angle += vel;
+  });
+  addEventListener('pointerup', () => {
+    if (!dragging) return; dragging = false; stage.classList.remove('dragging');
+    if (moved > 6) setTimeout(() => goTo(frontIndex()), 350);
+  });
+
+  document.getElementById('next').onclick = () => goTo((frontIndex() + 1) % N);
+  document.getElementById('prev').onclick = () => goTo((frontIndex() + N - 1) % N);
+  const playBtn = document.getElementById('play');
+  const setPlay = p => { playing = p; playBtn.textContent = p ? 'השהיה' : 'הפעלה'; };
+  playBtn.onclick = () => setPlay(!playing);
+  setPlay(playing);
+  stage.addEventListener('pointerenter', e => { if (e.pointerType !== 'mouse') return; stage.dataset.was = playing; if (playing) setPlay(false); });
+  stage.addEventListener('pointerleave', e => { if (e.pointerType !== 'mouse') return; if (stage.dataset.was === 'true') setPlay(true); });
+
+  addEventListener('resize', size);
+  size(); layout(); requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
